@@ -1,7 +1,8 @@
-from pydantic import BaseModel
 from typing import List
-from .product import Product
+from sqlmodel import Field, Relationship, SQLModel
 
-class Category(BaseModel):
+
+class Category(SQLModel, table=True):
+    cat_id: int = Field(default=None, primary_key=True)
     name: str
-    products: List[Product]
+    products: List["Product"] = Relationship(back_populates="category")

@@ -1,73 +1,36 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from typing import List
 from config import setup_cors
 from models.product import Product
 from models.category import Category
 from models.order import Order
+from db import get_session
+from sqlmodel import SQLModel, Session, select
+
+
+# ----------------
+# Pydantic Models for Response Schemas (Restricting Data)
+# ----------------
+class OrderRead(SQLModel):
+    date: str
+    price: float
+    status: str
+
+
+class ProductRead(SQLModel):
+    name: str
+    imgPath: str
+    price: float
+
+
+class CategoryRead(SQLModel):
+    name: str
+    products: List[ProductRead] = []
+
 
 app = FastAPI()
 
 setup_cors(app)
-
-# ----------------
-# Inline Data
-# ----------------
-getFrequentlyOrdered = [
-    Product(name="iPhone 15", imgPath="iphone.jpg", price=999),
-    Product(name="MacBook Pro", imgPath="macbook.jpg", price=1999),
-    Product(name="AirPods Pro", imgPath="airpods.jpg", price=249),
-]
-
-getCategories = [
-    Category(
-        name="Mobiles",
-        products=[
-            Product(name="Samsung Galaxy S24", imgPath="samsung.jpg", price=899),
-            Product(name="Google Pixel 9", imgPath="pixel.jpg", price=799),
-            Product(name="iPhone 15", imgPath="iphone.jpg", price=999),
-        ],
-    ),
-    Category(
-        name="Laptops",
-        products=[
-            Product(name="Dell XPS 15", imgPath="dell.jpg", price=1500),
-            Product(name="Lenovo ThinkPad", imgPath="thinkpad.jpg", price=1200),
-            Product(name="MacBook Pro", imgPath="macbook.jpg", price=1999),
-        ],
-    ),
-    Category(
-        name="Accessories",
-        products=[
-            Product(name="AirPods Pro", imgPath="airpods.jpg", price=249),
-            Product(name="Apple Watch Series 8", imgPath="watch.jpg", price=399),
-        ],
-    ),
-]
-
-getProducts = [
-    Product(name="Mouse", price=1299, imgPath="mouse.jpeg"),
-    Product(name="Keyboard", price=3000, imgPath="keyboard.jpeg"),
-    Product(name="Monitor", price=11000, imgPath="monitor.jpeg"),
-    Product(name="Speaker", price=10000, imgPath="speaker.jpeg"),
-    Product(name="Webcam", price=1599, imgPath="webcam.jpeg"),
-    Product(name="Laptop", price=75000, imgPath="laptop.jpeg"),
-    Product(name="Tablet", price=50000, imgPath="tablet.jpeg"),
-    Product(name="T-Shirt", price=1599, imgPath="tshirt.jpeg"),
-    Product(name="Shirt", price=1000, imgPath="shirt.jpeg"),
-    Product(name="Bag", price=1599, imgPath="bag.jpeg"),
-    Product(name="Travel Bag", price=2299, imgPath="travelbag.jpeg"),
-    Product(name="Mobile", price=1500, imgPath="mobile.jpeg"),
-    Product(name="Table", price=11000, imgPath="table.jpeg"),
-    Product(name="Cupboard", price=12999, imgPath="cubboard.jpeg"),
-    Product(name="Watch", price=2000, imgPath="watch.jpg"),
-    Product(name="HeadPhone", price=1599, imgPath="headphones.jpeg"),
-]
-
-getOrders = [
-    Order(date="2025-08-22", price=1299, status="Delivered"),
-    Order(date="2025-08-20", price=499, status="Pending"),
-    Order(date="2025-08-18", price=899, status="Cancelled"),
-]
 
 
 # ----------------
@@ -78,21 +41,23 @@ def root():
     return {"Hello": "World!", "Server Status": "Active"}
 
 
-@app.get("/getFrequentlyOrdered", response_model=List[Product])
-def list_frequently_ordered():
-    return getFrequentlyOrdered
+@app.get("/getFrequentlyOrdered", response_model=List[ProductRead], tags=["Orders"])
+def list_frequently_ordered(session: Session = Depends(get_session)):
+    return session.exec(select(Product).where(Product.is_popular == True)).all()
 
 
-@app.get("/getCategories", response_model=List[Category])
-def list_categories():
-    return getCategories
+@app.get("/getCategories", response_model=List[CategoryRead], tags=["Categories"])
+def list_categories(session: Session = Depends(get_session)):
+    statement = select(Category)
+    categories = session.exec(statement).all()
+    return categories
 
 
-@app.get("/getProducts", response_model=List[Product])
-def list_products():
-    return getProducts
+@app.get("/getProducts", response_model=List[ProductRead], tags=["Products"])
+def list_products(session: Session = Depends(get_session)):
+    return session.exec(select(Product)).all()
 
 
-@app.get("/getOrders", response_model=List[Order])
-def list_orders():
-    return getOrders
+@app.get("/getOrders", response_model=List[OrderRead], tags=["Orders"])
+def list_orders(session: Session = Depends(get_session)):
+    return session.exec(select(Order)).all()

@@ -11,8 +11,9 @@ This project powers the Angular frontend 👉 [eCartApp](https://github.com/Hsla
 - [x] **CORS enabled** for frontend integration
 - [x] **JSON responses** for products, categories, and orders
 - [x] **Pydantic models** for typed responses
+- [x] **SQLite database integration** using SQLModel
 - [ ] **Modular routes** (`products`, `categories`, `orders`) 🚧 Planned
-- [ ] **SQLite/Postgres database integration** 🚧 Planned
+- [ ] **Postgres database integration** 🚧 Planned
 - [ ] **Authentication (JWT)** 🚧 Planned
 - [ ] **Unit & integration tests** 🚧 Planned
 
@@ -21,19 +22,17 @@ This project powers the Angular frontend 👉 [eCartApp](https://github.com/Hsla
 ## 📂 Project Structure (Current)
 
 ```
-backend/
-│
-├── app/
-│   ├── main.py            # Application entry point
-│   ├── config.py          # Settings (planned)
-│   ├── models/            # Pydantic models (planned)
-│   ├── routes/            # API routes (planned)
-│   ├── services/          # Business logic (planned)
-│   └── tests/             # Unit tests (planned)
-│
-├── Pipfile
-├── Pipfile.lock
-└── README.md
+├── main.py            # Application entry point
+├── config.py          # Settings
+├── db.py              # Database connection
+├── models/            # Pydantic models
+│   ├── category.py
+│   ├── order.py
+│   ├── product.py
+├── eCartApp.db        # SQLite database file
+├── Pipfile            # Pipenv dependency management
+├── Pipfile.lock       # Pipenv dependency lock
+└── README.md          # Project documentation
 ```
 
 ---
