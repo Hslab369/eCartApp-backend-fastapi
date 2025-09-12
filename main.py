@@ -21,7 +21,7 @@ class OrderRead(SQLModel):
 
 class ProductRead(SQLModel):
     name: str
-    imgPath: str
+    imgPath: Optional[str] = None
     price: float
 
 
@@ -46,21 +46,30 @@ class CategoryReadWithId(SQLModel):
 class ProductReadWithId(SQLModel):
     prod_id: int
     name: str
-    imgPath: str
+    imgPath: Optional[str] = None
     price: float
     category: CategoryReadWithId
 
 
-# class ProductReadBatch(SQLModel):
-#     name: str
-#     imgPath: Optional[str] = None
-#     price: float = 0.0
-#     is_popular: bool = False
+class ProductReadBatch(SQLModel):
+    name: str
+    price: float = 0.0
+    is_popular: bool = False
 
 
 class ProductBatch(SQLModel):
     cat_id: int
-    names: List[str]
+    products: List[ProductReadBatch]
+
+
+class CategoryCreate(SQLModel):
+    name: str
+
+
+class OrderCreate(SQLModel):
+    date: str
+    price: float = 0.0
+    status: str = "pending"
 
 
 app = FastAPI()
@@ -88,6 +97,15 @@ def list_categories(session: Session = Depends(get_session)):
     return categories
 
 
+@app.get(
+    "/getCategorieswithId", response_model=List[CategoryReadWithId], tags=["Categories"]
+)
+def list_categories_with_id(session: Session = Depends(get_session)):
+    statement = select(Category)
+    categories = session.exec(statement).all()
+    return categories
+
+
 @app.get("/getProducts", response_model=List[ProductRead], tags=["Products"])
 def list_products(session: Session = Depends(get_session)):
     return session.exec(select(Product)).all()
@@ -107,13 +125,22 @@ def add_product(product: ProductCreate, session: Session = Depends(get_session))
     return db_product
 
 
-@app.get(
-    "/getCategorieswithId", response_model=List[CategoryReadWithId], tags=["Categories"]
-)
-def list_categories_with_id(session: Session = Depends(get_session)):
-    statement = select(Category)
-    categories = session.exec(statement).all()
-    return categories
+@app.post("/addCategory", response_model=CategoryReadWithId, tags=["Categories"])
+def add_category(category: CategoryCreate, session: Session = Depends(get_session)):
+    db_category = Category.model_validate(category)
+    session.add(db_category)
+    session.commit()
+    session.refresh(db_category)
+    return db_category
+
+
+@app.post("/addOrder", response_model=OrderRead, tags=["Orders"])
+def add_order(order: OrderCreate, session: Session = Depends(get_session)):
+    db_order = Order.model_validate(order)
+    session.add(db_order)
+    session.commit()
+    session.refresh(db_order)
+    return db_order
 
 
 @app.post("/addProductBatch", response_model=List[ProductReadWithId], tags=["Products"])
@@ -121,8 +148,8 @@ def add_product_batch(
     productsbatch: ProductBatch, session: Session = Depends(get_session)
 ):
     db_products = [
-        Product(name=product_name, cat_id=productsbatch.cat_id)
-        for product_name in productsbatch.names
+        Product.model_validate({**prod.model_dump(), "cat_id": productsbatch.cat_id})
+        for prod in productsbatch.products
     ]
 
     session.add_all(db_products)

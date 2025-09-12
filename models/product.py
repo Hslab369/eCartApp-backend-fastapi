@@ -16,7 +16,9 @@ from sqlalchemy import Column, String, null
 class Product(SQLModel, table=True):
     prod_id: Optional[int] = Field(default=None, primary_key=True)
     name: str
-    imgPath: Optional[str] = Field(default="", sa_column=Column("image_path", String))
+    imgPath: Optional[str] = Field(
+        default="", sa_column=Column("image_path", String, nullable=True)
+    )
     price: Optional[float] = 0.0
     is_popular: Optional[bool] = False
     cat_id: int = Field(foreign_key="category.cat_id")
